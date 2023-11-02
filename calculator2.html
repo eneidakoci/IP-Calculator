@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kalkulator IP</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styleCalc.css">
+</head>
+<body>
+<h1>Calculator</h1> <hr>
+    
+   <!-- adresa ip -->
+   <p> Vendosni adresën IP dhe numrin e biteve që përdoret në këtë network (subnet mask) :  
+    <input type='text' class='addr' id='q1'> <big>.</big>
+    <input type='text' class='addr' id='q2'> <big>.</big>
+    <input type='text' class='addr' id='q3'> <big>.</big>
+    <input type='text' class='addr' id='q4'> <big>/</big>
+    <input type='text' class='addr' id='cidr'><br><br></p> <hr>
+    <p>  Kliko butonin për të gjetur fushat e mëposhtme në lidhje me adresën IP të dhënë :  <button onclick='llogarit();'>   Kliko këtu</button></p>
+   
+   
+    <hr>
+    <table border="1">
+            <thead>
+                <tr>
+                    <th>Adresa IP</th>
+                    <th>Adresa IP në vlerë binare</th>
+                    <th>Subnet Mask</th>
+                    <th>Network ID</th>
+                    <th>Adresa Broadcast</th>
+                    <th>Host-i i parë</th>
+                    <th>Host-i i fundit</th>
+                    <th>Klasa</th>
+                    <th>Numri i host-eve</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td><span class=value id=resIP></span></td>
+                    <td><span class=value id=resBinIP></span></td>
+                    <td><span class=value id=resMask></span></td>
+                    <td><span class=value id=resNet></span></td>
+                    <td><span class=value id=resBC></span></td>
+                    <td><span class=value id=firstHost></span></td>
+                    <td><span class=value id=lastHost></span></td>
+                    <td><span class=value id=resClass></span></td>
+                    <td><span class=value id=host></span></td>
+                </tr>
+            </tbody> 
+    </table><br><hr>
+<!-- per gjetjen e subnet-eve -->
+<br> <br>
+Vendosni numrin e nënrrjetave:  
+<input type="number" id="subnetsNo" class="addr" min="1"><br><hr>
+Kliko butonin për të gjeneruar nënrrjetat: <button onclick="krijoNenrrjet()">Krijo Subnetet</button><br><br>
+
+  <script type='text/javascript'>
+    function llogarit(){
+        //marrja e 5 vlerave nga fushat e input-it
+        var q1=document.getElementById('q1').value;
+        var q2=document.getElementById('q2').value;
+        var q3=document.getElementById('q3').value;
+        var q4=document.getElementById('q4').value;
+        var cidr=document.getElementById('cidr').value;
+        //hostet
+        var n = 32-cidr;
+        document.getElementById('host').innerHTML = Math.pow(2,n)-2;
+    
+        //validimi i inputit
+        if((q1>=0 && q1<=255) && (q2>=0 && q2<=255) && (q3>=0 && q3<=255) && (q4>=0 && q4<=255) && (cidr>=8 && cidr<=31)){
+        //nqs lejohet inputi i dhene, do afishohet tek kolona e pare
+        document.getElementById('resIP').innerHTML=q1 + "." + q2 + "." + q3 + "." + q4;
+        
+        //konvertimi i adreses IP ne forme binare
+        var ipBin={};
+        ipBin[1]=String("00000000"+parseInt(q1,10).toString(2)).slice(-8);//sigurohet qe q1 eshte nr dhjetor me parseInt(), me pas e kthen ne string me baze 2(pra binar) dhe kthen 8 elementet e array duke nisur nga fundi
+        ipBin[2]=String("00000000"+parseInt(q2,10).toString(2)).slice(-8);
+        ipBin[3]=String("00000000"+parseInt(q3,10).toString(2)).slice(-8);
+        ipBin[4]=String("00000000"+parseInt(q4,10).toString(2)).slice(-8);
+        
+        //gjetja e klases
+        var klasa="";
+        if(q1<=126) {//nqs eshte numri i pare tek adresa IP <=126 eshte te klasa A e keshtu me rradhe
+        klasa="A";
+        }else if (q1==127) {
+        klasa="loopback IP" //Paketat e derguara ne kete adrese nuk e arrine kurre network-un, por vetem rrotullohen rreth NIC.
+        }else if (q1>=128 && q1<=191) {
+        klasa="B";
+        }else if (q1>=192 && q1<=223) {
+        klasa="C";
+        }else if (q1>=224 && q1<=239) {
+        klasa="D (Adresë Multicast)";//dergon paketa nje grupi, jo broadcast as unicast
+        }else if (q1>=240 && q1<=225) {
+        klasa="E (Eksperimentale)";
+        }else {
+        klasa="Jashte range-it të lejueshëm";
+        }
+        //netmask
+        var mask=cidr;
+        var bitetQePerdoren=Math.ceil(mask/8);
+        var bitetQePerdorenBinary=ipBin[bitetQePerdoren];
+        var maskBinaryBlockCount=mask%8;
+        if(maskBinaryBlockCount==0)
+            bitetQePerdoren++;
+        var maskBinaryBlock="";
+        var maskBlock="";
+        for(var i=1;i<=8;i++){
+        if(maskBinaryBlockCount>=i){
+        maskBinaryBlock+="1";
+        }else{
+        maskBinaryBlock+="0";
+        }
+        }
+        //kovertimi i binary mask block ne nr dhjetor
+        maskBlock=parseInt(maskBinaryBlock,2);
+        
+        //netID dhe broadcast
+        var netBinar="";
+        var bcBlockBinary="";
+        for(var i=1;i<=8;i++){
+            if(maskBinaryBlock.substr(i-1,1)=="1"){
+                netBinar+=bitetQePerdorenBinary.substr(i-1,1);
+                bcBlockBinary+=bitetQePerdorenBinary.substr(i-1,1);
+            }else{
+                netBinar+="0";
+                bcBlockBinary+="1";
+            }
+        }
+        
+        var mask = maskBinary = net = bc = netBinary = bcBinary = rangeA = rangeB = "";
+        //loop per te vendosur bllokun e stringjeve se bashku
+        for(var i=1;i<=4;i++){
+            if(bitetQePerdoren>i) {
+                mask+="255";
+                maskBinary+="11111111";
+                netBinary+=ipBin[i];
+                bcBinary+=ipBin[i];
+                net+=parseInt(ipBin[i],2);
+                bc+=parseInt(ipBin[i],2);
+                rangeA+=parseInt(ipBin[i],2);
+                rangeB+=parseInt(ipBin[i],2);
+            }else if (bitetQePerdoren==i) {
+                //blloku i numrave te rendesishem(te perdorshem)
+                mask+=maskBlock;
+                maskBinary+=maskBinaryBlock;
+                netBinary+=netBinar;
+                bcBinary+=bcBlockBinary;
+                net+=parseInt(netBinar,2);
+                bc+=parseInt(bcBlockBinary,2);
+                rangeA+=(parseInt(netBinar,2)+1);
+                rangeB+=(parseInt(bcBlockBinary,2)-1);
+            }else {
+                mask+=0;
+                maskBinary+="00000000";
+                netBinary+="00000000";
+                bcBinary+="11111111";
+                net+="0";
+                bc+="255";
+                rangeA+=0;
+                rangeB+=255;
+            }
+            //ndarja me '.'
+            if(i<4){
+            mask+=".";
+            maskBinary+=".";
+            netBinary+=".";
+            bcBinary+=".";
+            net+=".";
+            bc+=".";
+            rangeA+=".";
+            rangeB+=".";
+            }
+        }
+        
+        //rezultati
+        document.getElementById('resMask').innerHTML=mask;
+        document.getElementById('resNet').innerHTML=net;
+        document.getElementById('resBC').innerHTML=bc;
+        document.getElementById('resBinIP').innerHTML=ipBin[1]+"."+ipBin[2]+"."+ipBin[3]+"."+ipBin[4];
+        document.getElementById('resClass').innerHTML=klasa;
+
+        var lastHost=lastNum=lastNumID=lastNumBC=lastNumHost='';
+        if(cidr>=23 && cidr<=27){
+            var num = bc.substr(length-4,1);
+            var num1 = bc.substr(length-3,1);
+            if(num1 == '.'){
+                lastHost = bc.slice(-2) -1;  
+            }
+            if(num == '.'){
+                lastHost = bc.slice(-3) -1;  
+            }
+            document.getElementById('firstHost').innerHTML=q1+'.'+q2+'.'+q3+'.'+'1';
+            document.getElementById('lastHost').innerHTML=q1+'.'+q2+'.'+q3+'.'+lastHost;
+        }
+        else if(cidr == 8){
+            document.getElementById('firstHost').innerHTML=net.slice(0,7)+'.'+1;
+            lastNumBC = parseInt(bc.slice(-3));
+            lastNumHost = lastNumBC -1;
+            document.getElementById('lastHost').innerHTML=bc.slice(0,11)+'.'+lastNumHost;
+        }
+        else if(cidr<23 && cidr!=8){
+            document.getElementById('firstHost').innerHTML=net.slice(0,9)+'.'+1;  
+        }
+        else if(cidr>27){
+            lastNum = parseInt(net.slice(-2));
+            lastNumID = lastNum+1;
+            document.getElementById('firstHost').innerHTML=net.slice(0,10)+'.'+lastNumID;
+        }
+        if(cidr>=8 && cidr<=17){
+            lastNumBC = parseInt(bc.slice(-3));
+            lastNumHost = lastNumBC -1;
+            document.getElementById('lastHost').innerHTML=bc.slice(0,11)+'.'+lastNumHost;
+        }
+        if(cidr>=18 && cidr<=25){
+            lastNumBC = parseInt(bc.slice(-3));
+            lastNumHost = lastNumBC -1;
+            document.getElementById('lastHost').innerHTML=bc.slice(0,10)+'.'+lastNumHost;
+        }
+        if(cidr>=26 && cidr<=31){
+            lastNumBC = parseInt(bc.slice(-2));
+            lastNumHost = lastNumBC -1;
+            document.getElementById('lastHost').innerHTML=bc.slice(0,10)+'.'+lastNumHost;
+        }
+        }else{
+            alert("Vlerë e palejuar");
+        }
+    }//fund llogarit
+
+    //////////////////////////////////////////////funksioni per gjetjen e subnet-eve/////////////////////////////////////////////////
+    function krijoNenrrjet(){
+            var vlera1 = parseInt(document.getElementById("q1").value);
+            var vlera2 = parseInt(document.getElementById("q2").value);
+            var vlera3 = parseInt(document.getElementById("q3").value);
+            var vlera4 = parseInt(document.getElementById("q4").value);
+            var noOfSubnets = document.getElementById("subnetsNo").value;
+            var cidr = parseInt(document.getElementById("cidr").value);
+            
+            var bitePerSubnetet = bitetENevojshme(noOfSubnets); 
+            var ip = ktheNeBinar(vlera1,8)+""+ktheNeBinar(vlera2,8)+""+ktheNeBinar(vlera3,8)+""+ktheNeBinar(vlera4,8);    
+            var networkId = ip.substr(0,cidr); 
+            
+            if (cidr+bitePerSubnetet<=32){
+                var combArr = kombino(noOfSubnets,bitePerSubnetet);
+                
+                var networkIds = [];
+                var broadcastIds = [];
+                for (var i=0; i<noOfSubnets;i++){
+                    
+                    var res1 = networkId+""+combArr[i];
+                    res1 = fillWith(res1,'0',32);
+                    res1 = explodeAndDecimal(res1,'.',8);
+                    res1+="/"+(cidr+bitePerSubnetet);
+                    networkIds.push(res1);
+
+                    var res2 = networkId+""+combArr[i];
+                    res2 = fillWith(res2,'1',32);
+                    res2 = explodeAndDecimal(res2,'.',8);
+                    res2+="/"+(cidr+bitePerSubnetet);
+                    broadcastIds.push(res2);
+                }
+                
+                for (var i=0; i<networkIds.length;i++){
+                    createTable(networkIds[i],broadcastIds[i],i,cidr,bitePerSubnetet);
+                }
+                
+            }
+            else{
+                alert("Vlerë e palejuar!");
+            }
+            function ktheNeBinar(number,size){
+            var result="";
+            while (number!=0){
+                var rem=number%2;
+                result=result+rem;
+                number=parseInt(number/2);
+            }
+
+            var noChars = result.length;
+            result = fillWith(result,'0',size);
+            result = reverseString(result);
+            return result;
+        }
+        
+        function reverseString(str) {
+            if (str === "")
+                return "";
+            else
+                return reverseString(str.substr(1)) + str.charAt(0);
+        }
+
+        function convertToDecimal(number){
+            var maxPower = number.length-1;
+            var sum = 0;
+            for (var i=0;i<number.length;i++){
+                if(number.charAt(i)=='1'){
+                    sum += Math.pow(2,maxPower-i);
+                }
+            }
+            return sum;
+        }
+
+        function bitetENevojshme(noGroups){
+            var done = false;
+            var i=-1;
+            while (!done){
+                i++;
+                if (noGroups<=Math.pow(2,i))
+                    done=true;
+            }
+            return i;
+        }
+
+        function fillWith (word,c,length)
+        {
+            var size = word.length; 
+            for (var i=1; i<=length-size;i++){
+                word=word+c;
+            }
+            return word;
+        }
+
+        function kombino(reps,size){
+            var arr = [];
+            for (var i=0; i<reps;i++){
+                var str = ktheNeBinar(i,size);
+                arr.push(str);
+            }
+            return arr;
+        }
+
+        function explodeAndDecimal (str,c,no){
+            var newStr = "";
+            for (var index=0; index<str.length;index=index+no){
+                var sbstr = str.substr(index,no);
+                var dec = convertToDecimal(sbstr);
+                newStr+=dec+c;
+            }
+            newStr = newStr.substr(0,newStr.length-1);
+            return newStr;
+        }
+var elFundit = '';
+        function createTable(networkID,broadId,number,cidr,bitePerSubnetet){
+            var body = document.querySelector("body");
+            var headerText = document.createTextNode("Nënrrjeti "+(number+1));
+            var networkColText = document.createTextNode("Network Id: ");
+            var networkIdText = document.createTextNode(networkID);
+            elFundit = networkID.slice(-2);
+            var broadColText = document.createTextNode("Broadcast Id:");
+            var broadIdText = document.createTextNode(broadId);
+            let firstHostColText = document.createTextNode("Hosti i parë: ");
+            let firstHostIdText = document.createTextNode(networkID.split(".")[0]+"."+networkID.split(".")[1]+"."
+                +networkID.split(".")[2]+"."+(parseInt(networkID.split(".")[3],10)+1)+"/"+elFundit);
+            let lastHostColText = document.createTextNode("Hosti i fundit: ");
+            let lastHostIdText = document.createTextNode(broadId.split(".")[0]+"."+broadId.split(".")[1]+"."+broadId.split(".")[2]+"."+(parseInt(broadId.split(".")[3])-1)+"/"+elFundit);
+            let totalHostColText = document.createTextNode("Numri i host-eve");
+            let totalHostNumText = document.createTextNode(Math.pow(2,32-cidr-bitePerSubnetet)-2);
+
+
+            var th = document.createElement("th");
+            th.setAttribute("colspan","2");
+            th.appendChild(headerText);
+            var td0 = document.createElement("td");
+            td0.appendChild(networkColText);
+            var td1 = document.createElement("td");
+            td1.appendChild(networkIdText);
+            var td2 = document.createElement("td");
+            td2.appendChild(broadColText);
+            var td3 = document.createElement("td");
+            td3.appendChild(broadIdText);
+            let td4 = document.createElement("td");
+            td4.appendChild(firstHostColText);
+            let td5 = document.createElement("td");
+            td5.appendChild(firstHostIdText);
+            let td6 = document.createElement("td");
+            td6.appendChild(lastHostColText);
+            let td7 = document.createElement("td");
+            td7.appendChild(lastHostIdText);
+            let td8 = document.createElement("td");
+            td8.appendChild(totalHostColText);
+            let td9 = document.createElement("td");
+            td9.appendChild(totalHostNumText);
+
+            let row0 = document.createElement("tr");
+            row0.appendChild(th);
+            let row1 = document.createElement("tr");
+            row1.appendChild(td0);
+            row1.appendChild(td1);
+            let row2 = document.createElement("tr");
+            row2.appendChild(td2);
+            row2.appendChild(td3);
+            let row3 = document.createElement("tr");
+            row3.appendChild(td4);
+            row3.appendChild(td5);
+            let row4 = document.createElement("tr");
+            row4.appendChild(td6);
+            row4.appendChild(td7);
+            let row5 = document.createElement("tr");
+            row5.appendChild(td8);
+            row5.appendChild(td9);
+
+            let tabela = document.createElement("table");
+            tabela.appendChild(row0);
+            tabela.appendChild(row1);
+            tabela.appendChild(row2);
+            tabela.appendChild(row3);
+            tabela.appendChild(row4);
+            tabela.appendChild(row5);
+
+            body.appendChild(tabela);
+        }
+    }
+        
+    
+    </script> 
+    
+</body>
+</html>
